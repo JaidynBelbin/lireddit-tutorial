@@ -1,0 +1,26 @@
+req.session.userId = user.id; // Sets the userId field on the cookie = the id of the newly created user
+
+{userId: 1} -> sent to redis (a key/value store)
+
+1. 
+sess:qojfoieqjfoeifj -> {userId: 1}
+(key -> value)
+
+2. 
+express-session (the middleware) sets the cookie on my browser "jfoqoieufhgoiqjfoe"
+(a signed version of the key in redis)
+
+3.
+when the user makes a request
+"jfoqoieufhgoiqjfoe" -> sent to server
+
+4.
+the cookie is decrypted using the secret we set in session
+"jfoqoieufhgoiqjfoe" -> sess:qojfoieqjfoeifj
+
+5.
+make a request to redis
+sess:qojfoieqjfoeifj -> {userId: 1}
+
+6. 
+req.session = {userId: 1}
