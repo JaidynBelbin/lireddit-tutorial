@@ -1,5 +1,5 @@
-import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
-import { ObjectType, Field } from 'type-graphql';
+import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import { ObjectType, Field } from "type-graphql";
 
 // Adding @ObjectType and @Field exposes these fields to the graphQL server
 @ObjectType()
@@ -10,7 +10,7 @@ export class User {
   id!: number;
 
   @Field(() => String)
-  @Property({type: Date})
+  @Property({ type: Date })
   createdAt = new Date();
 
   @Field(() => String)
@@ -18,9 +18,13 @@ export class User {
   updatedAt = new Date();
 
   @Field()
-  @Property({type: 'text', unique: true})
+  @Property({ type: "text", unique: true })
   username!: string;
 
-  @Property({type: 'text'})
+  @Field()
+  @Property({ type: "text", unique: true })
+  email!: string;
+
+  @Property({ type: "text" })
   password!: string;
 }

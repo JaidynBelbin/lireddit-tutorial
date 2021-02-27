@@ -1,4 +1,0 @@
-fragment UserType on User {
-  id
-  username
-}

@@ -8,7 +8,7 @@ import { buildSchema } from "type-graphql";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
-import redis from "redis";
+import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import cors from "cors";
@@ -18,6 +18,7 @@ const main = async () => {
   // to the db.
   const orm = await MikroORM.init(microConfig);
 
+  //await orm.em.nativeDelete(User, {});
   // Getting all the migrations on app startup
   await orm.getMigrator().up();
 
@@ -26,7 +27,7 @@ const main = async () => {
 
   // Setting up redis
   const RedisStore = connectRedis(session);
-  const redisClient = redis.createClient();
+  const redis = new Redis();
 
   // To fix this error: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
   app.use(
@@ -43,7 +44,7 @@ const main = async () => {
     session({
       name: COOKIE_NAME,
       store: new RedisStore({
-        client: redisClient,
+        client: redis,
         disableTouch: true,
       }),
       cookie: {
@@ -67,7 +68,7 @@ const main = async () => {
 
     // A special object accessible by all the resolvers, so put the EntityManager here,
     // since we need it to query the Posts.
-    context: ({ req, res }) => ({ em: orm.em, req, res }),
+    context: ({ req, res }) => ({ em: orm.em, req, res, redis }),
   });
 
   // Applying the Express middleware to our Apollo Server, creating a graphql endpoint
