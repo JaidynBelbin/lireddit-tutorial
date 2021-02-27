@@ -78,7 +78,7 @@ const main = async () => {
 
   // Telling our Express server to listen for connections on port 4000
   app.listen(4000, () => {
-    console.log("Server has started on localhost:4000");
+    console.log("Express server started on localhost:4000");
   });
 };
 
