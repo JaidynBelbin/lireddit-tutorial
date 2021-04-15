@@ -15,6 +15,7 @@ import { UsernamePasswordInput } from "./UsernamePasswordInput";
 import { validateRegister } from "../utils/validateRegister";
 import { sendEmail } from "../utils/sendEmail";
 import { v4 } from "uuid";
+import { getConnection } from "typeorm";
 
 // Specifies what field the error came from and displays an appropriate message
 @ObjectType()
@@ -40,7 +41,7 @@ export class UserResolver {
   async changePassword(
     @Arg("token") token: string,
     @Arg("newPassword") newPassword: string,
-    @Ctx() { em, redis, req }: MyContext
+    @Ctx() { redis, req }: MyContext
   ): Promise<UserResponse> {
     if (newPassword.length < 2) {
       return {
@@ -68,8 +69,9 @@ export class UserResolver {
       };
     }
 
+    const userIDnum = parseInt(userID);
     // Getting the user and changing their password
-    const user = await em.findOne(User, { id: parseInt(userID) });
+    const user = await User.findOne(userIDnum);
 
     if (!user) {
       return {
@@ -82,8 +84,10 @@ export class UserResolver {
       };
     }
 
-    user.password = await argon2.hash(newPassword);
-    await em.persistAndFlush(user);
+    await User.update(
+      { id: userIDnum },
+      { password: await argon2.hash(newPassword) }
+    );
 
     // Deleting the token from redis.
     await redis.del(key);
@@ -97,9 +101,9 @@ export class UserResolver {
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg("email") email: string,
-    @Ctx() { em, redis }: MyContext
+    @Ctx() { redis }: MyContext
   ) {
-    const user = await em.findOne(User, { email });
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       // email not in the database
@@ -126,23 +130,20 @@ export class UserResolver {
   }
 
   @Query(() => User, { nullable: true })
-  async me(@Ctx() { req, em }: MyContext) {
-    console.log("session ", req.session);
-
+  me(@Ctx() { req }: MyContext) {
     // You are not logged in
     if (!req.session.userId) {
       return null;
     }
 
     // Return the logged in user
-    const user = await em.findOne(User, { id: req.session.userId });
-    return user;
+    return User.findOne(req.session.userId);
   }
 
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: UsernamePasswordInput,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
     const errors = validateRegister(options);
 
@@ -151,15 +152,29 @@ export class UserResolver {
     }
 
     const hashedPassword = await argon2.hash(options.password);
-    const user = em.create(User, {
-      username: options.username,
-      email: options.email,
-      password: hashedPassword,
-    });
-
-    // Handling 'user already exists' errors
+    let user;
     try {
-      await em.persistAndFlush(user);
+      // user = (await User.create({
+      //   username: options.username,
+      //   email: options.email,
+      //   password: hashedPassword,
+      // }).save()) as any;
+      // console.log("user: ", user);
+
+      //An alternative way of doing the above is here.
+      const result = await getConnection()
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
+          username: options.username,
+          email: options.email,
+          password: hashedPassword,
+        })
+        .returning("*")
+        .execute();
+      user = result.raw[0];
+      console.log("result: ", result);
     } catch (err) {
       if (err.code === "23505") {
         return {
@@ -184,13 +199,12 @@ export class UserResolver {
   async login(
     @Arg("usernameOrEmail") usernameOrEmail: string,
     @Arg("password") password: string,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { req }: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(
-      User,
+    const user = await User.findOne(
       usernameOrEmail.includes("@")
-        ? { email: usernameOrEmail }
-        : { username: usernameOrEmail }
+        ? { where: { email: usernameOrEmail } }
+        : { where: { username: usernameOrEmail } }
     );
 
     if (!user) {
@@ -205,6 +219,7 @@ export class UserResolver {
     }
 
     const valid = await argon2.verify(user.password, password);
+
     if (!valid) {
       return {
         errors: [
@@ -216,8 +231,10 @@ export class UserResolver {
       };
     }
 
-    // Setting the userId property in the cookie. Can set whatever we want here
+    // Setting the userId property in the cookie. Can set whatever field we want here
     req.session.userId = user.id;
+    console.log(user);
+    console.log(req.session.userId);
 
     return { user };
   }

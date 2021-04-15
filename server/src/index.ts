@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import { MikroORM } from "@mikro-orm/core";
+import { createConnection } from "typeorm";
 import { COOKIE_NAME, _prod_ } from "./constants";
-import microConfig from "./mikro-orm.config";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
@@ -12,15 +11,24 @@ import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import cors from "cors";
+import { User } from "./entities/User";
+import { Post } from "./entities/Post";
 
 const main = async () => {
   // Initialising the ORM, loading entity metadata, creating the EM and connecting
   // to the db.
-  const orm = await MikroORM.init(microConfig);
+  const connection = await createConnection({
+    type: "postgres",
+    database: "lireddit-new",
+    username: "postgres",
+    password: "postgres",
+    logging: true,
+    synchronize: true,
+    entities: [Post, User],
+  });
 
-  //await orm.em.nativeDelete(User, {});
-  // Getting all the migrations on app startup
-  await orm.getMigrator().up();
+  // Clearing the posts
+  //await Post.delete({})
 
   // Creating a new Express app
   const app = express();
@@ -68,7 +76,7 @@ const main = async () => {
 
     // A special object accessible by all the resolvers, so put the EntityManager here,
     // since we need it to query the Posts.
-    context: ({ req, res }) => ({ em: orm.em, req, res, redis }),
+    context: ({ req, res }) => ({ req, res, redis }),
   });
 
   // Applying the Express middleware to our Apollo Server, creating a graphql endpoint
