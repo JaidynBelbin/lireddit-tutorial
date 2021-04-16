@@ -1,4 +1,4 @@
-import { dedupExchange, fetchExchange } from "urql";
+import { dedupExchange, Exchange, fetchExchange } from "urql";
 import { cacheExchange } from "@urql/exchange-graphcache";
 import {
   LogoutMutation,
@@ -8,6 +8,19 @@ import {
   RegisterMutation,
 } from "../generated/graphql";
 import { betterUpdateQuery } from "./betterUpdateQuery";
+import { pipe, tap } from "wonka";
+import Router from "next/router";
+
+const errorExchange: Exchange = ({ forward }) => ($ops) => {
+  return pipe(
+    forward($ops),
+    tap(({ error }) => {
+      if (error?.message.includes("not authenticated")) {
+        Router.replace("/login"); // redirecting rather than pushing
+      }
+    })
+  );
+};
 
 // Utility that handles creating the URQL client with support for server-side rendering
 // and handling cache exchanges that update the cache after login, register and logout mutations
@@ -46,7 +59,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
             );
           },
 
-          register: (_result, args, cache, info) => {
+          register: (_result, cache) => {
             betterUpdateQuery<RegisterMutation, MeQuery>(
               cache,
               { query: MeDocument },
@@ -65,6 +78,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
         },
       },
     }),
+    errorExchange,
     ssrExchange,
     fetchExchange,
   ],
