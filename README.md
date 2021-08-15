@@ -5,6 +5,10 @@ From the Ben Awad fullstack tutorial https://www.youtube.com/watch?v=I6ypD7qv3Z8
 
 - `cd server && yarn start`
 
+#### To start watch-mode
+
+- `cd server && yarn watch`
+
 ### To start web:
 
 - `cd web && yarn dev`
