@@ -13,10 +13,10 @@ import connectRedis from "connect-redis";
 import cors from "cors";
 import { User } from "./entities/User";
 import { Post } from "./entities/Post";
+import path from "path";
 
 const main = async () => {
-  // Initialising the ORM, loading entity metadata, creating the EM and connecting
-  // to the db.
+  // Initialising our Postgres database connection with TypeORM
   const connection = await createConnection({
     type: "postgres",
     database: "lireddit-new",
@@ -24,11 +24,13 @@ const main = async () => {
     password: "postgres",
     logging: true,
     synchronize: true,
+    migrations: [path.join(__dirname, "./migrations/*")],
     entities: [Post, User],
   });
 
-  // Clearing the posts
-  //await Post.delete({})
+  //await connection.runMigrations();
+
+  //await Post.delete({});
 
   // Creating a new Express app
   const app = express();

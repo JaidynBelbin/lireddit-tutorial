@@ -30,7 +30,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "../server/src/migrations/1619407756870-FakePosts3.ts"  ],
   "exclude": [
     "node_modules"
   ]
