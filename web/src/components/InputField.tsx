@@ -3,6 +3,7 @@ import {
   FormLabel,
   Input,
   FormErrorMessage,
+  Textarea,
 } from "@chakra-ui/react";
 import React, { InputHTMLAttributes } from "react";
 import { useField } from "formik";
@@ -11,20 +12,26 @@ import { useField } from "formik";
 type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   name: string;
+  textarea?: boolean;
 };
 
-// This is our generic input field, can reuse it for whatever we like (username, password, etc.)
+// A generic input field, can use it for whatever we like (username, password, text, etc.)
 export const InputField: React.FC<InputFieldProps> = ({
   label, // destructuring these two out of props, Input doesn't want to take them
-  size,
+  size: _,
+  textarea,
   ...props
 }) => {
+  let InputOrTextarea = Input;
+  if (textarea) {
+    InputOrTextarea = Textarea;
+  }
   const [field, { error }] = useField(props);
 
   return (
     <FormControl isInvalid={!!error}>
       <FormLabel htmlFor={field.name}>{label}</FormLabel>
-      <Input {...field} {...props} id={field.name} />
+      <InputOrTextarea {...field} {...props} id={field.name} />
       {error ? <FormErrorMessage>{error}</FormErrorMessage> : null}
     </FormControl>
   );

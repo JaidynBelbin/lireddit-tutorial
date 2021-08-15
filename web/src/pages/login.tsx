@@ -26,8 +26,13 @@ export const Login: React.FC<{}> = ({}) => {
             // Login failed :(
             setErrors(toErrorMap(response.data.login.errors));
           } else if (response.data?.login.user) {
-            // Login worked!
-            router.push("/");
+            // Login worked! Checking if there is a 'next' route to go to from the router query,
+            // otherwise go to the home page.
+            if (typeof router.query.next === "string") {
+              router.push(router.query.next);
+            } else {
+              router.push("/");
+            }
           }
         }}
       >
