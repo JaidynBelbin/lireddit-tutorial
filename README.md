@@ -3,7 +3,7 @@ From the Ben Awad fullstack tutorial https://www.youtube.com/watch?v=I6ypD7qv3Z8
 
 ### To start server:
 
-- `cd server && yarn start`
+- `cd server && yarn dev`
 
 #### To start watch-mode
 
